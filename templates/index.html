@@ -53,30 +53,18 @@
         const AC='{{ theme_color }}';
         const canvas=document.getElementById('matrix'),ctx=canvas.getContext('2d');
         canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-        const chars='01アイウエオカキクケコ';
+        const chars='0123456789アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
         const cols=Math.floor(canvas.width/14),drops=Array(cols).fill(1);
         setInterval(()=>{
             ctx.fillStyle='rgba(10,10,18,0.05)';ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.fillStyle=AC+'33';ctx.font='12px monospace';
-            for(let i=0;i<drops.length;i++){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*14,drops[i]*14);if(drops[i]*14>canvas.height&&Math.random()>.98)drops[i]=0;drops[i]++;}
-        },60);
+            ctx.fillStyle=AC;ctx.font='12px monospace';
+            for(let i=0;i<drops.length;i++){
+                ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*14,drops[i]*14);
+                if(drops[i]*14>canvas.height&&Math.random()>.98)drops[i]=0;
+                drops[i]++;
+            }
+        },33);
         window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
-        
-        const colors = ['#00ff41','#a855f7','#38bdf8','#ef4444','#fbbf24','#06b6d4','#ec4899','#84cc16','#ff00ff','#ff6b00'];
-        let ci = 0;
-        setInterval(() => {
-            ci = (ci + 1) % colors.length;
-            const nc = colors[ci];
-            document.querySelector('.brand').style.color = nc;
-            document.querySelector('.brand').style.textShadow = '0 0 30px ' + nc;
-            document.querySelector('.card').style.borderColor = nc;
-            document.querySelector('.auth-btn').style.borderColor = nc;
-            document.querySelector('.auth-btn').style.color = nc;
-            document.querySelector('.prompt').style.color = nc;
-            document.querySelector('.cursor').style.background = nc;
-            document.querySelector('input').style.borderColor = nc + '66';
-            document.querySelector('.card').style.boxShadow = '0 0 80px ' + nc + '22,0 0 160px ' + nc + '11';
-        }, 200);
     </script>
 </body>
 </html>
