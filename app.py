@@ -10,11 +10,11 @@ import threading
 import time
 import urllib.request
 import sys
+import shlex
 from pathlib import Path
 from functools import wraps
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file, abort
-import io
+from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24).hex())
@@ -24,7 +24,7 @@ DATA_FILE = BASE_DIR / "data.json"
 SERVERS_DIR = BASE_DIR / "servers"
 SERVERS_DIR.mkdir(exist_ok=True)
 
-NORMAL_PASSWORD = os.environ.get("NORMAL_PASSWORD", "rixor")
+NORMAL_PASSWORD = os.environ.get("NORMAL_PASSWORD", "Rixor2")
 
 RUNNING_PROCESSES = {}
 
@@ -42,7 +42,7 @@ def load_data():
             "maintenance_msg": "System under maintenance.",
             "theme_color": "#00ff41",
             "normal_password": NORMAL_PASSWORD,
-            "site_name": "𝙍𝙄𝙓𝙊𝙍 𝙃𝙊𝙎𝙏",
+            "site_name": "RIXOR HOST",
             "auto_restart_interval": 300
         }
     }
@@ -69,7 +69,7 @@ def login_required(f):
         data = load_data()
         settings = data.get("settings", {})
         if settings.get("maintenance"):
-            return render_template("maintenance.html", message=settings.get("maintenance_msg", "Under maintenance"), site_name=settings.get("site_name", "𝙍𝙄𝙓𝙊𝙍 𝙃𝙊𝙎𝙏"), theme_color=get_theme_color())
+            return render_template("maintenance.html", message=settings.get("maintenance_msg", "Under maintenance"), site_name=settings.get("site_name", "RIXOR HOST"), theme_color=get_theme_color())
         return f(*args, **kwargs)
     return decorated
 
@@ -100,22 +100,17 @@ def kill_process(pid):
         pass
 
 def auto_detect_main_file(extract_dir):
-    """স্বয়ংক্রিয়ভাবে মেইন ফাইল শনাক্ত করার জন্য ইউটিলিটি"""
     candidates = ["main.py", "bot.py", "app.py", "index.js", "bot.js", "app.js", "index.ts", "server.js"]
     for f in candidates:
         if (extract_dir / f).exists():
             return f
-    # যদি পরিচিত ফাইল না পায়, প্রথম ডিরেক্টরি ফাইল রিটার্ন করবে
     for p in extract_dir.iterdir():
         if p.is_file() and p.suffix in [".py", ".js", ".ts", ".php", ".go", ".sh"]:
             return p.name
     return "main.py"
 
 def prepare_environment_and_deps(extract_dir, log_path, runtime="python"):
-    """অটোমেটিক পাথ ফিক্স এবং প্যাকেজ অটো-ইন্সটলেশন লজিক"""
     env = os.environ.copy()
-    
-    # ১. PYTHONPATH অটোমেশন (Import error ও Submodule detection বন্ধ করবে)
     subfolders = [str(extract_dir)]
     for item in extract_dir.iterdir():
         if item.is_dir() and not item.name.startswith((".", "__pycache__", "node_modules")):
@@ -125,7 +120,6 @@ def prepare_environment_and_deps(extract_dir, log_path, runtime="python"):
     new_pythonpath = os.pathsep.join(subfolders)
     env["PYTHONPATH"] = f"{new_pythonpath}{os.pathsep}{existing_pythonpath}" if existing_pythonpath else new_pythonpath
 
-    # ২. অটো ডিপেনডেন্সি ইন্সটলেশন
     try:
         if runtime == "node":
             pkg_json = extract_dir / "package.json"
@@ -179,7 +173,7 @@ _sync_process_status()
 def render_keep_alive():
     while True:
         try:
-            time.sleep(600)  # 10 minute
+            time.sleep(600)
             port = os.environ.get("PORT", 5000)
             url = f"http://127.0.0.1:{port}/api/ping"
             
@@ -191,7 +185,6 @@ def render_keep_alive():
                 ping_url = f"{external_url}/api/ping"
                 req2 = urllib.request.Request(ping_url, headers={'User-Agent': 'Render-KeepAlive/1.0'})
                 urllib.request.urlopen(req2, timeout=10)
-                
         except Exception:
             pass
 
@@ -247,7 +240,7 @@ def auto_restart_server(name):
         
         log_path = SERVERS_DIR / name / "logs.txt"
         if main_cmd:
-            cmd = main_cmd.split()
+            cmd = shlex.split(main_cmd)
         else:
             cmd = get_run_command(cfg.get("runtime", "python"), main_file)
             
@@ -305,7 +298,7 @@ def login():
         normal_pass = settings.get("normal_password", NORMAL_PASSWORD)
         
         if password != normal_pass:
-            return render_template("login.html", error="Wrong password", theme_color=get_theme_color(), site_name=settings.get("site_name", "𝙍𝙄𝙓𝙊𝙍 𝙃𝙊𝙎𝙏"))
+            return render_template("login.html", error="Wrong password", theme_color=get_theme_color(), site_name=settings.get("site_name", "RIXOR HOST"))
         
         username = "admin"
         user = data["users"].get(username)
@@ -325,7 +318,7 @@ def login():
     
     data = load_data()
     settings = data.get("settings", {})
-    return render_template("login.html", error=None, theme_color=get_theme_color(), site_name=settings.get("site_name", "𝙍𝙄𝙓𝙊𝙍 𝙃𝙊𝙎𝙏"))
+    return render_template("login.html", error=None, theme_color=get_theme_color(), site_name=settings.get("site_name", "RIXOR HOST"))
 
 @app.route("/logout")
 def logout():
@@ -339,7 +332,7 @@ def dashboard():
     username = session["username"]
     data = load_data()
     settings = data.get("settings", {})
-    site_name = settings.get("site_name", "𝙍𝙄𝙓𝙊𝙍 𝙃𝙊𝙎𝙏")
+    site_name = settings.get("site_name", "RIXOR HOST")
     user_servers = {k: v for k, v in data["servers"].items() if v.get("owner") == username}
     changed = False
     for name, cfg in user_servers.items():
@@ -494,13 +487,13 @@ def upload_file(name):
         shutil.move(str(upload_path), str(dest))
         extracted_files = [f.filename]
         
-    # অটো মেইন ফাইল সিলেকশন
     if not cfg.get("main_file"):
         cfg["main_file"] = auto_detect_main_file(extract_dir)
-        data["servers"][name] = cfg
+        data['servers'][name] = cfg
         save_data(data)
-    
-    return jsonify({"success": True, "files": extracted_files, "count": len(extracted_files)})
+
+    return redirect(url_for('server_detail', name=name))
+
 
 @app.route("/server/<name>/settings", methods=["POST"])
 @login_required
@@ -548,7 +541,7 @@ def start_server(name):
     log_path.parent.mkdir(parents=True, exist_ok=True)
     
     if main_cmd:
-        cmd = main_cmd.split()
+        cmd = shlex.split(main_cmd)
     else:
         cmd = get_run_command(cfg.get("runtime", "python"), main_file)
     
@@ -624,6 +617,7 @@ def stop_server(name):
     save_data(data)
     return jsonify({"success": True})
 
+# ==================== LOGS & EXECUTION ====================
 @app.route("/server/<name>/logs")
 @login_required
 def get_logs(name):
@@ -637,13 +631,12 @@ def get_logs(name):
         return jsonify({"logs": "No logs yet. Start the server to see output."})
     
     try:
-        if log_path.stat().st_size > 1024 * 1024:
-            with open(log_path, 'r', errors='replace') as f:
-                f.seek(-50000, 2)
-                content = f.read()
-            content = "... (showing last 50KB) ...\n" + content
-        else:
-            content = log_path.read_text(errors="replace")
+        with open(log_path, 'rb') as f:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            f.seek(max(0, size - 50000), os.SEEK_SET)
+            content = f.read().decode('utf-8', errors='ignore')
+            
         lines = content.splitlines()
         if len(lines) > 200:
             lines = lines[-200:]
@@ -651,7 +644,43 @@ def get_logs(name):
         return jsonify({"logs": content or "No output yet."})
     except Exception as e:
         return jsonify({"logs": f"Error reading logs: {e}"})
-     
+
+@app.route("/server/<name>/exec", methods=["POST"])
+@login_required
+def exec_command(name):
+    data = load_data()
+    cfg = data["servers"].get(name)
+    if not cfg or cfg.get("owner") != session["username"]:
+        return jsonify({"success": False, "error": "Access denied"}), 403
+
+    payload = request.get_json() or {}
+    cmd_text = payload.get("command", "").strip()
+
+    if not cmd_text:
+        return jsonify({"success": False, "error": "No command specified"})
+
+    log_path = SERVERS_DIR / name / "logs.txt"
+    extract_dir = SERVERS_DIR / name / "extracted"
+
+    try:
+        with open(log_path, "a") as lf:
+            lf.write(f"\n$ {cmd_text}\n")
+
+        # shlex ব্যবহার করে নিরাপদে আর্গুমেন্ট পার্স করা হচ্ছে
+        cmd_args = shlex.split(cmd_text)
+        with open(log_path, "a") as lf:
+            subprocess.Popen(
+                cmd_args,
+                cwd=str(extract_dir),
+                stdout=lf,
+                stderr=lf
+            )
+        return jsonify({"success": True})
+    except Exception as e:
+        with open(log_path, "a") as lf:
+            lf.write(f"Command execution error: {e}\n")
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route("/server/<name>/logs/clear", methods=["POST"])
 @login_required
 def clear_logs(name):
@@ -705,7 +734,6 @@ def list_packages(name):
 
     return jsonify({"success": True, "packages": installed, "runtime": runtime})
 
-
 @app.route("/server/<name>/packages/install", methods=["POST"])
 @login_required
 def install_package(name):
@@ -750,7 +778,6 @@ def install_package(name):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 @app.route("/server/<name>/packages/remove", methods=["POST"])
 @login_required
 def remove_package(name):
@@ -784,7 +811,6 @@ def remove_package(name):
         return jsonify({"success": True, "message": f"Package {pkg_name} removed successfully!"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
